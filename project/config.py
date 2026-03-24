@@ -51,5 +51,20 @@ class Config:
     FPS: int = 60
     COLLISION_KILL_DIST: float = 14.0
 
+    # ── Accélération ──────────────────────────────────────────────────────
+    SPEED_STEPS: tuple = (1.0, 1.5, 2.0)
+    SPEED_STEP_IDX: int = 0
+
+    # ── Règles de fin ─────────────────────────────────────────────────────
+    # Les virus gagnent s'ils atteignent ce % du sol. 0.0 = désactivé.
+    VIRUS_WIN_COVERAGE_PCT: float = 40.0
+
+    # Les globules blancs gagnent si les virus n'ont pas gagné après ce délai
+    # (en secondes). 0.0 = désactivé.
+    WBC_WIN_TIME: float = 120.0
+
 
 CFG = Config()
+
+
+
