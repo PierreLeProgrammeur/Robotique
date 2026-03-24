@@ -20,7 +20,6 @@ class Config:
     # Virus
     VIRUS_SPEED: float = 55.0
     VIRUS_TURN_SPEED: float = 2.5
-    VIRUS_RANDOM_BIAS: float = 0.6
     VIRUS_SPAWN_INTERVAL: float = 1.8
     VIRUS_SPAWN_BATCH: int = 2
     VIRUS_MAX: int = 120
@@ -35,16 +34,14 @@ class Config:
     BOID_W_SEPARATION: float = 1.8
     BOID_W_ALIGNMENT: float = 0.9
     BOID_W_COHESION: float = 0.7
-    BOID_W_HUNT: float = 1.4
     BOID_W_AVOID_WALL: float = 2.0
     WALL_REPULSION_DIST: float = 40.0
 
     # Palette
-    COLOR_BG: Tuple         = (210, 60, 60)
-    COLOR_VIRUS: Tuple      = (10, 10, 10)
-    COLOR_WBC: Tuple        = (245, 245, 245)
-    COLOR_SOIL_VIRUS: Tuple = (96, 96, 96)
-    COLOR_SOIL_WBC: Tuple   = (240, 240, 240)
+    COLOR_BG: Tuple         = (210, 60, 60)    # rouge — état sain
+    COLOR_VIRUS: Tuple      = (10, 10, 10)     # noir
+    COLOR_WBC: Tuple        = (245, 245, 245)  # blanc
+    COLOR_SOIL_VIRUS: Tuple = (30, 10, 10)     # sombre — sol contaminé
     COLOR_UI_TEXT: Tuple    = (255, 255, 255)
 
     # Simulation
