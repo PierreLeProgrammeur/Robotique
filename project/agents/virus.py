@@ -6,9 +6,9 @@ import numpy as np
 import pygame
 
 from config import CFG
-from utils import angle_diff, vec_from_angle, angle_from_vec, clamp_angle
-from project.agents.agent import Agent
-from environment.environnement import SOIL_WBC, SOIL_VIRUS
+from utils import vec_from_angle, angle_from_vec, clamp_angle
+from agents.agent import Agent
+from environment.environnement import SOIL_VIRUS, SOIL_EMPTY
 
 if TYPE_CHECKING:
     from environment.environnement import Environnement
@@ -17,9 +17,10 @@ if TYPE_CHECKING:
 class Virus(Agent):
     """
     Agent pathogène.
-    Comportement : marche aléatoire biaisée.
-    Perception   : fuite si sol blanc (WBC) détecté dans le cône de vision.
-    Peinture sol : SOIL_VIRUS (sombre).
+    Objectif  : contaminer (peindre en noir) un maximum de sol.
+    Priorités :
+      1. Cases rouges (SOIL_EMPTY) visibles dans le cône → les couvrir
+      2. Rien en vue → cap maintenu (ligne droite)
     """
 
     def __init__(self, x: float, y: float):
@@ -32,38 +33,24 @@ class Virus(Agent):
             vision_angle=CFG.VISION_ANGLE,
             radius=CFG.AGENT_RADIUS,
         )
-        self._turn_timer = 0.0
-        self._next_turn  = random.uniform(0.3, 1.2)
 
     # ── Décision ───────────────────────────────────────────────────────────
 
     def decide(self, env: "Environnement", agents: List[Agent], dt: float):
-        self._flee_or_wander(env, dt)
+        self._seek_to_contaminate(env, dt)
         self._repel_from_walls(dt)
         self.theta = clamp_angle(self.theta)
 
-    def _flee_or_wander(self, env: "Environnement", dt: float):
-        """Fuit le sol blanc ; sinon effectue une marche aléatoire biaisée."""
-        white_target = env.has_enemy_color_in_cone(
+    def _seek_to_contaminate(self, env: "Environnement", dt: float):
+        """Se dirige vers les cases rouges (SOIL_EMPTY) pour les contaminer."""
+        target = env.has_enemy_color_in_cone(
             self.pos, self.theta, self.vision_half_angle,
-            self.vision_radius, enemy_state=SOIL_WBC
+            self.vision_radius, enemy_state=SOIL_EMPTY
         )
-        if white_target is not None:
-            flee_dir = self.pos - white_target
-            desired  = math.atan2(flee_dir[1], flee_dir[0])
-            delta    = angle_diff(self.theta, desired)
-            max_turn = CFG.VIRUS_TURN_SPEED * dt
-            self.theta += max(-max_turn, min(max_turn, delta))
-        else:
-            self._turn_timer += dt
-            if self._turn_timer >= self._next_turn:
-                self._turn_timer = 0.0
-                self._next_turn  = random.uniform(0.3, 1.2)
-                if random.random() < CFG.VIRUS_RANDOM_BIAS:
-                    self.theta += random.gauss(0, 0.8)
+        if target is not None:
+            self.steer_toward(target, CFG.VIRUS_TURN_SPEED, dt)
 
     def _repel_from_walls(self, dt: float):
-        """Pousse doucement le virus loin des bords avant le rebond physique."""
         margin = CFG.WALL_REPULSION_DIST
         w, h   = CFG.SCREEN_WIDTH, CFG.SCREEN_HEIGHT
         force  = np.zeros(2)
@@ -76,10 +63,10 @@ class Virus(Agent):
         if self.pos[1] > h - margin:
             force[1] -= (self.pos[1] - (h - margin)) / margin
         if np.linalg.norm(force) > 0.05:
-            desired  = angle_from_vec(force)
-            delta    = angle_diff(self.theta, desired)
-            max_turn = CFG.VIRUS_TURN_SPEED * dt
-            self.theta += max(-max_turn, min(max_turn, delta))
+            self.steer_toward(
+                self.pos + vec_from_angle(angle_from_vec(force)) * 10,
+                CFG.VIRUS_TURN_SPEED, dt
+            )
 
     # ── Sol & rendu ────────────────────────────────────────────────────────
 

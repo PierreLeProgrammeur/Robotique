@@ -6,18 +6,16 @@ import pygame
 from config import CFG
 from utils import point_in_cone
 
-# États discrets des cellules de sol
-SOIL_EMPTY = 0
-SOIL_VIRUS = 1
-SOIL_WBC   = 2
+# États discrets des cellules de sol — 2 états uniquement
+SOIL_EMPTY = 0   # sain / guéri → couleur fond rouge
+SOIL_VIRUS = 1   # contaminé    → couleur sombre
 
 
 class Environnement:
     """
     Grille 2D représentant l'état du sol.
-    Chaque cellule stocke un état discret : SOIL_EMPTY / SOIL_VIRUS / SOIL_WBC.
-    La couleur ne s'efface jamais d'elle-même : elle est écrasée uniquement
-    quand un agent adverse passe sur la cellule.
+    Chaque cellule : SOIL_EMPTY (sain) ou SOIL_VIRUS (contaminé).
+    Permanente : écrasée uniquement quand l'agent adverse passe dessus.
     Rendu différentiel : seules les cellules modifiées sont redessinées.
     """
 
@@ -35,7 +33,6 @@ class Environnement:
         self._color_table = {
             SOIL_EMPTY: CFG.COLOR_BG,
             SOIL_VIRUS: CFG.COLOR_SOIL_VIRUS,
-            SOIL_WBC:   CFG.COLOR_SOIL_WBC,
         }
         self._prev_grid = np.full_like(self.grid, -1)
 
@@ -74,8 +71,8 @@ class Environnement:
                                  half_angle: float, radius: float,
                                  enemy_state: int) -> Optional[np.ndarray]:
         """
-        Retourne le centroïde (position monde) des cellules avec `enemy_state`
-        visibles dans le cône de vision, ou None si aucune.
+        Retourne la position monde de la cellule avec `enemy_state` la plus
+        proche visible dans le cône de vision, ou None si aucune.
         """
         r0, c0 = self.world_to_cell(origin[0], origin[1])
         margin = int(radius // self.cell_size) + 1
@@ -95,7 +92,10 @@ class Environnement:
                 if point_in_cone(origin, theta, half_angle, radius, pt):
                     positions.append(pt)
 
-        return np.mean(positions, axis=0) if positions else None
+        if not positions:
+            return None
+        # Cellule la plus proche plutôt que le centroïde moyen
+        return min(positions, key=lambda p: np.linalg.norm(p - origin))
 
     # ── Mise à jour ────────────────────────────────────────────────────────
 

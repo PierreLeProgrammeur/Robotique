@@ -6,7 +6,7 @@ import numpy as np
 import pygame
 
 from config import CFG
-from environment.environnement import Environnement, SOIL_EMPTY, SOIL_WBC
+from environment.environnement import Environnement, SOIL_EMPTY, SOIL_VIRUS
 from agents.agent import Agent
 from agents.virus import Virus
 from agents.globule_blanc import GlobuleBlanc
@@ -27,7 +27,6 @@ class Simulation:
         self.cfg = cfg
         pygame.init()
 
-        # ── Résolution réelle → plein écran ──────────────────────────────
         info = pygame.display.Info()
         self.cfg.SCREEN_WIDTH  = info.current_w
         self.cfg.SCREEN_HEIGHT = info.current_h
@@ -46,16 +45,15 @@ class Simulation:
         self.env    = Environnement(self.cfg.SCREEN_WIDTH, self.cfg.SCREEN_HEIGHT,
                                     self.cfg.GRID_CELL_SIZE)
         self.agents: List[Agent] = []
-        self.paused        = False
-        self.elapsed       = 0.0
-        self._spawn_timer  = 0.0
+        self.paused       = False
+        self.elapsed      = 0.0
+        self._spawn_timer = 0.0
 
         self._spawn_initial()
 
     # ── Initialisation ─────────────────────────────────────────────────────
 
     def _edge_pos(self) -> Tuple[float, float]:
-        """Position aléatoire sur l'un des quatre bords (spawn virus)."""
         edge = random.randint(0, 3)
         m = 5.0
         w, h = self.cfg.SCREEN_WIDTH, self.cfg.SCREEN_HEIGHT
@@ -99,7 +97,6 @@ class Simulation:
     # ── Collisions ─────────────────────────────────────────────────────────
 
     def _handle_collisions(self):
-        """WBC détruit les virus au contact + anti-overlap physique."""
         wbcs    = [a for a in self.agents if isinstance(a, GlobuleBlanc) and a.alive]
         viruses = [a for a in self.agents if isinstance(a, Virus) and a.alive]
 
@@ -110,8 +107,9 @@ class Simulation:
                 if np.linalg.norm(wbc.pos - virus.pos) < self.cfg.COLLISION_KILL_DIST:
                     virus.alive = False
                     self.env.paint_radius(virus.pos[0], virus.pos[1],
-                                          SOIL_WBC, r_cells=3)
+                                          SOIL_EMPTY, r_cells=3)
 
+        # Anti-overlap physique
         alive = [a for a in self.agents if a.alive]
         for i, a in enumerate(alive):
             for b in alive[i + 1:]:
