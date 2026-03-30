@@ -230,7 +230,7 @@ class Simulation:
             remaining = max(0.0, self.cfg.WBC_WIN_TIME - self.elapsed)
             rm = int(remaining // 60)
             rs = int(remaining % 60)
-            time_left_str = f"  (J-{rm:02d}:{rs:02d})"
+            time_left_str = f"  ({rm:02d}:{rs:02d})"
 
         # ── Panneau infos ─────────────────────────────────────────────────
         panel_h = 104
@@ -239,7 +239,7 @@ class Simulation:
         self.screen.blit(ui_surf, (W - 354, 8))
 
         lines = [
-            f"Temps : {mins:02d}:{secs:02d}{time_left_str}   x{speed_str}  [+/-]",
+            f"Temps : {mins:02d}:{secs:02d}{time_left_str}   x{speed_str}  [↑↓]",
             f"Virus : {n_virus}   |   Globules : {n_wbc}",
             f"Sol contaminé : {pct_virus:5.1f}%",
             f"Objectif virus : {self.cfg.VIRUS_WIN_COVERAGE_PCT:.0f}%",
@@ -317,12 +317,12 @@ class Simulation:
                         self.paused = not self.paused
                     elif event.key == pygame.K_r:
                         self._reset()
-                    elif event.key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
+                    elif event.key == pygame.K_UP:
                         self.cfg.SPEED_STEP_IDX = min(
                             self.cfg.SPEED_STEP_IDX + 1,
                             len(self.cfg.SPEED_STEPS) - 1
                         )
-                    elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+                    elif event.key == pygame.K_DOWN:
                         self.cfg.SPEED_STEP_IDX = max(
                             self.cfg.SPEED_STEP_IDX - 1, 0
                         )
