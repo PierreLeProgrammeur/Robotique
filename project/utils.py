@@ -3,7 +3,6 @@ import numpy as np
 
 
 def angle_diff(a: float, b: float) -> float:
-    """Différence angulaire signée dans [-π, π]."""
     d = (b - a) % (2 * math.pi)
     return d - 2 * math.pi if d > math.pi else d
 
@@ -22,7 +21,7 @@ def clamp_angle(theta: float) -> float:
 
 def point_in_cone(origin: np.ndarray, theta: float, half_angle: float,
                   radius: float, point: np.ndarray) -> bool:
-    """Teste si `point` est dans le cône de vision centré sur `origin`."""
+    # Teste si `point` est dans le cône de vision centré sur `origin`.
     diff = point - origin
     dist = np.linalg.norm(diff)
     if dist < 1e-6 or dist > radius:

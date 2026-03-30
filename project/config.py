@@ -43,7 +43,7 @@ class Config:
     COLOR_BG: Tuple         = (210, 60, 60)
     COLOR_VIRUS: Tuple      = (10, 10, 10)
     COLOR_WBC: Tuple        = (245, 245, 245)
-    COLOR_SOIL_VIRUS: Tuple = (30, 10, 10)
+    COLOR_SOIL_VIRUS: Tuple = (96, 96, 96)
     COLOR_SOIL_WBC: Tuple   = (240, 240, 240)
     COLOR_UI_TEXT: Tuple    = (255, 255, 255)
 
@@ -65,6 +65,3 @@ class Config:
 
 
 CFG = Config()
-
-
-

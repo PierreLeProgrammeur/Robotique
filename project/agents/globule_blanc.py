@@ -7,7 +7,7 @@ import pygame
 
 from config import CFG
 from utils import angle_from_vec, vec_from_angle
-from agents.agent import Agent
+from project.agents.agent import Agent
 from agents.virus import Virus
 from environment.environnement import SOIL_VIRUS, SOIL_WBC
 

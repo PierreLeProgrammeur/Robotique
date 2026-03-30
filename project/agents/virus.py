@@ -7,7 +7,7 @@ import pygame
 
 from config import CFG
 from utils import angle_diff, vec_from_angle, angle_from_vec, clamp_angle
-from agents.agent import Agent
+from project.agents.agent import Agent
 from environment.environnement import SOIL_WBC, SOIL_VIRUS
 
 if TYPE_CHECKING:

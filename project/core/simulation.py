@@ -39,7 +39,7 @@ class Simulation:
 
         self.screen = pygame.display.set_mode(
             (self.cfg.SCREEN_WIDTH, self.cfg.SCREEN_HEIGHT),
-            pygame.FULLSCREEN | pygame.NOFRAME
+            pygame.NOFRAME
         )
         pygame.display.set_caption("Globules Blancs vs Virus")
 
