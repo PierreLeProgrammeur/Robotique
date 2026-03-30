@@ -1,0 +1,4 @@
+date,heure_debut,heure_fin,gagnant,duree_sec,pct_virus_final,virus_elimines,virus_spawnes_total,cases_nettoyees_wbc,n_wbc,virus_speed,wbc_speed,virus_spawn_interval,virus_spawn_batch,virus_max,boid_separation_radius,boid_w_separation,boid_w_alignment,boid_w_cohesion,boid_w_hunt,boid_w_avoid_wall,virus_win_coverage_pct,wbc_win_time
+2026-03-30,10:36:31,10:38:05,virus,59.7,40.06,31,86,1335,14,55.0,75.0,1.8,2,120,30.0,1.8,0.9,0.7,1.4,2.0,40.0,120.0
+2026-03-30,10:44:29,10:46:08,virus,66.7,40.03,51,94,1856,14,55.0,75.0,1.8,2,120,30.0,1.8,0.9,0.7,1.4,2.0,40.0,120.0
+2026-03-30,10:51:46,10:51:55,abandon,7.7,4.48,1,28,11,14,55.0,75.0,1.8,2,120,30.0,1.8,0.9,0.7,1.4,2.0,40.0,120.0

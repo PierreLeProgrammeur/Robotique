@@ -6,6 +6,7 @@ import numpy as np
 import pygame
 
 from config import CFG
+from logger import SimLogger
 from environment.environnement import Environnement, SOIL_EMPTY, SOIL_VIRUS
 from agents.agent import Agent
 from agents.virus import Virus
@@ -22,11 +23,11 @@ class Simulation:
         au bout de WBC_WIN_TIME secondes.
 
     Touches :
-      ESPACE      Pause / Reprendre
-      R           Reset
-      + / =       Palier de vitesse suivant (1x → 1.5x → 2x)
-      -           Palier de vitesse précédent
-      ESC         Quitter
+      ESPACE        Pause / Reprendre
+      R             Reset (nouvelle partie, nouvelle ligne de log)
+      Flèche haut   Palier de vitesse suivant (1x → 1.5x → 2x)
+      Flèche bas    Palier de vitesse précédent
+      ESC           Quitter
     """
 
     def __init__(self, cfg=CFG):
@@ -57,8 +58,14 @@ class Simulation:
 
         self._game_over        = False
         self._game_over_reason = ""
-        self._winner           = ""   # "virus" | "wbc"
+        self._winner           = ""
 
+        # ── Compteurs de partie ───────────────────────────────────────────
+        self._virus_elimines      = 0
+        self._virus_spawnes_total = 0
+        self._cases_nettoyees     = 0
+
+        self._logger = SimLogger(self.cfg)
         self._spawn_initial()
 
     # ── Initialisation ────────────────────────────────────────────────────
@@ -74,9 +81,12 @@ class Simulation:
 
     def _spawn_initial(self):
         self.agents.clear()
-        for _ in range(20):
+        initial_count = 20
+        for _ in range(initial_count):
             x, y = self._edge_pos()
             self.agents.append(Virus(x, y))
+        self._virus_spawnes_total += initial_count
+
         cx = self.cfg.SCREEN_WIDTH  / 2
         cy = self.cfg.SCREEN_HEIGHT / 2
         for _ in range(self.cfg.N_WBC):
@@ -88,6 +98,8 @@ class Simulation:
             ))
 
     def _reset(self):
+        # Log la partie en cours comme abandon avant de repartir
+        self._close_logger("abandon")
         self.env.reset()
         self.elapsed            = 0.0
         self._spawn_timer       = 0.0
@@ -96,12 +108,29 @@ class Simulation:
         self._game_over_reason  = ""
         self._winner            = ""
         self.cfg.SPEED_STEP_IDX = 0
+        self._virus_elimines      = 0
+        self._virus_spawnes_total = 0
+        self._cases_nettoyees     = 0
+        self._logger = SimLogger(self.cfg)
         self._spawn_initial()
+
+    # ── Logger ────────────────────────────────────────────────────────────
+
+    def _close_logger(self, gagnant: str):
+        """Écrit la ligne de résultats et ferme le logger."""
+        pct_final = self._coverage()
+        self._logger.close(
+            gagnant=gagnant,
+            duree_sec=self.elapsed,
+            pct_virus_final=pct_final,
+            virus_elimines=self._virus_elimines,
+            virus_spawnes_total=self._virus_spawnes_total,
+            cases_nettoyees_wbc=self._cases_nettoyees,
+        )
 
     # ── Couverture du sol ─────────────────────────────────────────────────
 
     def _coverage(self) -> float:
-        """Retourne pct_virus en % du total des cases."""
         total = self.env.grid.size
         if total == 0:
             return 0.0
@@ -117,6 +146,7 @@ class Simulation:
         for _ in range(count):
             x, y = self._edge_pos()
             self.agents.append(Virus(x, y))
+        self._virus_spawnes_total += count
 
     # ── Collisions ────────────────────────────────────────────────────────
 
@@ -130,7 +160,7 @@ class Simulation:
                     continue
                 if np.linalg.norm(wbc.pos - virus.pos) < self.cfg.COLLISION_KILL_DIST:
                     virus.alive = False
-                    # Nettoie le sol autour du virus éliminé (retour à SOIL_EMPTY)
+                    self._virus_elimines += 1
                     self.env.paint_radius(virus.pos[0], virus.pos[1],
                                           SOIL_EMPTY, r_cells=3)
 
@@ -158,6 +188,7 @@ class Simulation:
                 self._game_over_reason = (
                     f"Les virus ont envahi {pct_virus:.1f}% du sol !"
                 )
+                self._close_logger("virus")
                 return
 
         if self.cfg.WBC_WIN_TIME > 0:
@@ -169,6 +200,7 @@ class Simulation:
                 self._game_over_reason = (
                     f"Les globules ont tenu {mins:02d}:{secs:02d} !"
                 )
+                self._close_logger("wbc")
 
     # ── Un pas de simulation ──────────────────────────────────────────────
 
@@ -177,6 +209,11 @@ class Simulation:
         for agent in alive:
             agent.decide(self.env, self.agents, dt)
             agent.move(dt, self.cfg.SCREEN_WIDTH, self.cfg.SCREEN_HEIGHT)
+            # Compte les cases nettoyées par les WBC
+            if isinstance(agent, GlobuleBlanc):
+                row, col = self.env.world_to_cell(agent.pos[0], agent.pos[1])
+                if self.env.grid[row, col] == SOIL_VIRUS:
+                    self._cases_nettoyees += 1
             agent.paint_soil(self.env)
 
         self._handle_collisions()
@@ -224,16 +261,15 @@ class Simulation:
         speed     = self.cfg.SPEED_STEPS[self.cfg.SPEED_STEP_IDX]
         speed_str = f"{speed:.1f}".rstrip('0').rstrip('.')
 
-        # Temps restant avant victoire des globules blancs
         time_left_str = ""
         if self.cfg.WBC_WIN_TIME > 0 and not self._game_over:
             remaining = max(0.0, self.cfg.WBC_WIN_TIME - self.elapsed)
             rm = int(remaining // 60)
             rs = int(remaining % 60)
-            time_left_str = f"  ({rm:02d}:{rs:02d})"
+            time_left_str = f"  (J-{rm:02d}:{rs:02d})"
 
         # ── Panneau infos ─────────────────────────────────────────────────
-        panel_h = 104
+        panel_h = 120
         ui_surf = pygame.Surface((344, panel_h), pygame.SRCALPHA)
         pygame.draw.rect(ui_surf, (0, 0, 0, 150), (0, 0, 344, panel_h), border_radius=8)
         self.screen.blit(ui_surf, (W - 354, 8))
@@ -241,8 +277,9 @@ class Simulation:
         lines = [
             f"Temps : {mins:02d}:{secs:02d}{time_left_str}   x{speed_str}  [↑↓]",
             f"Virus : {n_virus}   |   Globules : {n_wbc}",
-            f"Sol contaminé : {pct_virus:5.1f}%",
-            f"Objectif virus : {self.cfg.VIRUS_WIN_COVERAGE_PCT:.0f}%",
+            f"Sol contaminé : {pct_virus:5.1f}%  (objectif {self.cfg.VIRUS_WIN_COVERAGE_PCT:.0f}%)",
+            f"Éliminés : {self._virus_elimines}   Nettoyées : {self._cases_nettoyees}",
+            f"Spawns total : {self._virus_spawnes_total}",
             "[SPC] Pause   [R] Reset   [ESC] Quitter",
         ]
         for i, line in enumerate(lines):
@@ -253,9 +290,9 @@ class Simulation:
 
         # Barre de progression de l'infection
         bar_x = W - 348
-        bar_y = 14 + 3 * 17 + 13
+        bar_y = 14 + 2 * 17 + 13
         bar_w = 332
-        bar_h = 6
+        bar_h = 5
         pygame.draw.rect(self.screen, (60, 20, 20),
                          (bar_x, bar_y, bar_w, bar_h), border_radius=3)
         fill_w = int(bar_w * min(pct_virus / max(self.cfg.VIRUS_WIN_COVERAGE_PCT, 1), 1.0))
@@ -270,12 +307,10 @@ class Simulation:
         pygame.draw.circle(self.screen, self.cfg.COLOR_WBC, (lx + 8, ly + 30), 7)
         self.screen.blit(self.font.render("Globule blanc", True, (240, 240, 240)), (lx + 20, ly + 23))
 
-        # ── Pause ─────────────────────────────────────────────────────────
         if self.paused:
             s = self.font_big.render("  PAUSE  ", True, (255, 230, 60))
             self.screen.blit(s, (W // 2 - s.get_width() // 2, H // 2 - 15))
 
-        # ── Game over ─────────────────────────────────────────────────────
         if self._game_over:
             overlay = pygame.Surface((W, H), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 160))
@@ -292,13 +327,20 @@ class Simulation:
             title   = self.font_big.render(title_text, True, title_color)
             reason  = self.font.render(self._game_over_reason, True, (255, 255, 255))
             score_v = self.font.render(f"Sol contaminé final : {pct_final:.1f}%", True, (255, 160, 160))
-            hint    = self.font.render("[R] Recommencer   [ESC] Quitter", True, (200, 200, 200))
+            stats   = self.font.render(
+                f"Éliminés : {self._virus_elimines}   "
+                f"Nettoyées : {self._cases_nettoyees}   "
+                f"Spawns : {self._virus_spawnes_total}",
+                True, (200, 200, 200)
+            )
+            hint    = self.font.render("[R] Nouvelle partie   [ESC] Quitter", True, (200, 200, 200))
 
             cx, cy = W // 2, H // 2
-            self.screen.blit(title,   (cx - title.get_width()   // 2, cy - 60))
-            self.screen.blit(reason,  (cx - reason.get_width()  // 2, cy - 20))
-            self.screen.blit(score_v, (cx - score_v.get_width() // 2, cy + 15))
-            self.screen.blit(hint,    (cx - hint.get_width()    // 2, cy + 55))
+            self.screen.blit(title,   (cx - title.get_width()   // 2, cy - 70))
+            self.screen.blit(reason,  (cx - reason.get_width()  // 2, cy - 30))
+            self.screen.blit(score_v, (cx - score_v.get_width() // 2, cy + 10))
+            self.screen.blit(stats,   (cx - stats.get_width()   // 2, cy + 32))
+            self.screen.blit(hint,    (cx - hint.get_width()    // 2, cy + 65))
 
     # ── Boucle principale ─────────────────────────────────────────────────
 
@@ -309,9 +351,11 @@ class Simulation:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self._close_logger("abandon")
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
+                        self._close_logger("abandon")
                         running = False
                     elif event.key == pygame.K_SPACE:
                         self.paused = not self.paused
