@@ -18,11 +18,9 @@ if TYPE_CHECKING:
 class GlobuleBlanc(Agent):
     """
     Agent immunitaire.
-    Objectif  : guérir (repeindre en rouge = SOIL_EMPTY) le sol contaminé.
-    Priorités :
-      1. Virus visible dans le cône → l'éliminer en priorité absolue
-      2. Cases noires (SOIL_VIRUS) visibles → les repeindre en rouge
-      3. Rien en vue → Boids pour couvrir le terrain en groupe
+    Comportement : algorithme de Boids (séparation, alignement, cohésion)
+                   + chasse des virus (sol contaminé et agents directs).
+    Peinture sol : remet SOIL_EMPTY sous ses pieds (nettoyage).
     """
 
     def __init__(self, x: float, y: float):
@@ -36,7 +34,7 @@ class GlobuleBlanc(Agent):
             radius=CFG.AGENT_RADIUS,
         )
 
-    # ── Forces Boids (fallback quand rien à guérir) ────────────────────────
+    # ── Forces Boids ──────────────────────────────────────────────────────
 
     def _separation(self, neighbors: List["GlobuleBlanc"]) -> np.ndarray:
         force = np.zeros(2)
@@ -71,10 +69,12 @@ class GlobuleBlanc(Agent):
             force[1] -= (self.pos[1] - (h - margin)) / margin
         return force
 
-    # ── Décision principale ────────────────────────────────────────────────
-
-    def decide(self, env: "Environnement", agents: List[Agent], dt: float):
-        # Priorité 1 : virus visible → chasse immédiate
+    def _hunt(self, env: "Environnement", agents: List[Agent]) -> np.ndarray:
+        """
+        Retourne la force de chasse :
+        - priorité 1 : virus visible directement dans le cône
+        - priorité 2 : cellule de sol contaminé la plus proche dans le cône
+        """
         visible_virus = [
             a for a in agents
             if isinstance(a, Virus) and a.alive and self.sees(a)
@@ -82,40 +82,45 @@ class GlobuleBlanc(Agent):
         if visible_virus:
             closest = min(visible_virus,
                           key=lambda v: np.linalg.norm(v.pos - self.pos))
-            self.steer_toward(closest.pos, CFG.WBC_TURN_SPEED, dt)
-            return
+            return closest.pos - self.pos
 
-        # Priorité 2 : sol noir (SOIL_VIRUS) visible → le guérir
         dark_target = env.has_enemy_color_in_cone(
             self.pos, self.theta, self.vision_half_angle,
             self.vision_radius, enemy_state=SOIL_VIRUS
         )
-        if dark_target is not None:
-            self.steer_toward(dark_target, CFG.WBC_TURN_SPEED, dt)
-            return
+        return dark_target - self.pos if dark_target is not None else np.zeros(2)
 
-        # Priorité 3 : rien en vue → Boids pour disperser et couvrir le terrain
+    # ── Décision ──────────────────────────────────────────────────────────
+
+    def decide(self, env: "Environnement", agents: List[Agent], dt: float):
         wbc_neighbors = [
             a for a in agents
             if isinstance(a, GlobuleBlanc) and a is not self
             and a.alive and self.sees(a)
         ]
+
         total = (
             CFG.BOID_W_SEPARATION * self._separation(wbc_neighbors) +
             CFG.BOID_W_ALIGNMENT  * self._alignment(wbc_neighbors)  +
             CFG.BOID_W_COHESION   * self._cohesion(wbc_neighbors)   +
+            CFG.BOID_W_HUNT       * self._hunt(env, agents)          +
             CFG.BOID_W_AVOID_WALL * self._wall_avoidance()
         )
+
         if np.linalg.norm(total) > 1e-4:
+            desired = angle_from_vec(total)
             self.steer_toward(
-                self.pos + vec_from_angle(angle_from_vec(total)),
+                self.pos + vec_from_angle(desired),
                 CFG.WBC_TURN_SPEED, dt
             )
 
-    # ── Sol & rendu ────────────────────────────────────────────────────────
+    # ── Sol ───────────────────────────────────────────────────────────────
 
     def paint_soil(self, env: "Environnement"):
+        """Nettoie la cellule sous le globule : remet le sol à l'état sain."""
         env.paint(self.pos[0], self.pos[1], SOIL_EMPTY)
+
+    # ── Rendu ─────────────────────────────────────────────────────────────
 
     def render(self, screen: pygame.Surface):
         if not self.alive:

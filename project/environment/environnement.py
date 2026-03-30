@@ -11,6 +11,7 @@ SOIL_EMPTY = 0   # sain / guéri → couleur fond rouge
 SOIL_VIRUS = 1   # contaminé    → couleur sombre
 
 
+
 class Environnement:
     """
     Grille 2D représentant l'état du sol.
