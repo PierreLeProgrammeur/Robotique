@@ -4,7 +4,6 @@ import numpy as np
 import pygame
 
 from configuration.cfg import CFG
-from utils import point_in_cone
 
 # États discrets des cellules de sol — 2 états uniquement
 SOIL_EMPTY = 0   # sain / guéri → couleur fond rouge
@@ -74,29 +73,47 @@ class Environnement:
         """
         Retourne la position monde de la cellule avec `enemy_state` la plus
         proche visible dans le cône de vision, ou None si aucune.
+        Version vectorisée numpy — pas de boucle Python sur les cellules.
         """
+        cs = self.cell_size
         r0, c0 = self.world_to_cell(origin[0], origin[1])
-        margin = int(radius // self.cell_size) + 1
+        margin = int(radius // cs) + 1
         r_min = max(0, r0 - margin)
-        r_max = min(self.rows, r0 + margin + 1)
+        r_max = min(self.rows - 1, r0 + margin)
         c_min = max(0, c0 - margin)
-        c_max = min(self.cols, c0 + margin + 1)
+        c_max = min(self.cols - 1, c0 + margin)
 
-        positions = []
-        for r in range(r_min, r_max):
-            for c in range(c_min, c_max):
-                if self.grid[r, c] != enemy_state:
-                    continue
-                cx = (c + 0.5) * self.cell_size
-                cy = (r + 0.5) * self.cell_size
-                pt = np.array([cx, cy])
-                if point_in_cone(origin, theta, half_angle, radius, pt):
-                    positions.append(pt)
-
-        if not positions:
+        # Indices de toutes les cellules de l'état cible dans la bounding box
+        subgrid = self.grid[r_min:r_max + 1, c_min:c_max + 1]
+        local_rc = np.argwhere(subgrid == enemy_state)
+        if len(local_rc) == 0:
             return None
-        # Cellule la plus proche plutôt que le centroïde moyen
-        return min(positions, key=lambda p: np.linalg.norm(p - origin))
+
+        # Coordonnées monde de chaque candidat
+        rows_g = local_rc[:, 0] + r_min
+        cols_g = local_rc[:, 1] + c_min
+        pts_x = (cols_g + 0.5) * cs
+        pts_y = (rows_g + 0.5) * cs
+
+        # Distance et filtre rayon
+        dx = pts_x - origin[0]
+        dy = pts_y - origin[1]
+        dists = np.hypot(dx, dy)
+        in_radius = dists <= radius
+        if not np.any(in_radius):
+            return None
+
+        # Filtre cône angulaire (vectorisé)
+        angles = np.arctan2(dy[in_radius], dx[in_radius])
+        a_diff = (angles - theta + np.pi) % (2 * np.pi) - np.pi
+        in_cone = np.abs(a_diff) < half_angle
+        if not np.any(in_cone):
+            return None
+
+        # Cellule la plus proche parmi les valides
+        valid_dists = dists[in_radius][in_cone]
+        valid_idx = np.where(in_radius)[0][in_cone][np.argmin(valid_dists)]
+        return np.array([pts_x[valid_idx], pts_y[valid_idx]])
 
     # ── Mise à jour ────────────────────────────────────────────────────────
 

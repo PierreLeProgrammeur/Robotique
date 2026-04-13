@@ -36,8 +36,9 @@ _LOG_PATH = os.path.join(_LOGS_DIR, "runs.csv")
 
 class SimLogger:
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, verbose: bool = True):
         self._cfg         = cfg
+        self._verbose     = verbose
         self._heure_debut = datetime.now()
         self._closed      = False
 
@@ -48,9 +49,11 @@ class SimLogger:
         if write_header:
             self._writer.writerow(HEADER)
             self._file.flush()
-            print(f"[logger] Nouveau fichier de log créé : {_LOG_PATH}")
+            if self._verbose:
+                print(f"[logger] Nouveau fichier de log créé : {_LOG_PATH}")
         else:
-            print(f"[logger] Log → {_LOG_PATH}")
+            if self._verbose:
+                print(f"[logger] Log → {_LOG_PATH}")
 
     def close(self, gagnant: str, duree_sec: float, pct_virus_final: float,
               virus_elimines: int, virus_spawnes_total: int,
@@ -90,4 +93,5 @@ class SimLogger:
         ])
         self._file.flush()
         self._file.close()
-        print(f"[logger] Partie enregistrée ({gagnant}, {duree_sec:.0f}s)")
+        if self._verbose:
+            print(f"[logger] Partie enregistrée ({gagnant}, {duree_sec:.0f}s)")

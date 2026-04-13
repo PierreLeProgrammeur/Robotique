@@ -30,18 +30,22 @@ class Simulation:
       ESC           Quitter
     """
 
-    def __init__(self, cfg=CFG):
-        self.cfg = cfg
+    def __init__(self, cfg=CFG, headless: bool = False):
+        self.cfg      = cfg
+        self._headless = headless
         pygame.init()
 
-        info = pygame.display.Info()
-        self.cfg.SCREEN_WIDTH  = info.current_w
-        self.cfg.SCREEN_HEIGHT = info.current_h
-
-        self.screen = pygame.display.set_mode(
-            (self.cfg.SCREEN_WIDTH, self.cfg.SCREEN_HEIGHT),
-            pygame.NOFRAME
-        )
+        if headless:
+            self.cfg.SCREEN_WIDTH  = 1280
+            self.cfg.SCREEN_HEIGHT = 720
+            self.screen = pygame.display.set_mode((1, 1))
+        else:
+            info = pygame.display.Info()
+            self.cfg.SCREEN_WIDTH  = int(info.current_w * 0.6)
+            self.cfg.SCREEN_HEIGHT = int(info.current_h * 0.6)
+            self.screen = pygame.display.set_mode(
+                (self.cfg.SCREEN_WIDTH, self.cfg.SCREEN_HEIGHT)
+            )
         pygame.display.set_caption("Globules Blancs vs Virus")
 
         self.clock    = pygame.time.Clock()
@@ -65,7 +69,7 @@ class Simulation:
         self._virus_spawnes_total = 0
         self._cases_nettoyees     = 0
 
-        self._logger = SimLogger(self.cfg)
+        self._logger = SimLogger(self.cfg, verbose=not self._headless)
         self._spawn_initial()
 
     # ── Initialisation ────────────────────────────────────────────────────
@@ -111,7 +115,7 @@ class Simulation:
         self._virus_elimines      = 0
         self._virus_spawnes_total = 0
         self._cases_nettoyees     = 0
-        self._logger = SimLogger(self.cfg)
+        self._logger = SimLogger(self.cfg, verbose=not self._headless)
         self._spawn_initial()
 
     # ── Logger ────────────────────────────────────────────────────────────
@@ -341,6 +345,20 @@ class Simulation:
             self.screen.blit(score_v, (cx - score_v.get_width() // 2, cy + 10))
             self.screen.blit(stats,   (cx - stats.get_width()   // 2, cy + 32))
             self.screen.blit(hint,    (cx - hint.get_width()    // 2, cy + 65))
+
+    # ── Boucle headless (bench) ───────────────────────────────────────────
+
+    def run_headless(self):
+        """Tourne jusqu'à game over sans rendu ni limite FPS. Pour bench.py."""
+        dt = 0.1          # pas de temps large : 10 steps/s simulés (6× moins de calculs)
+        dot_every = 100   # un point toutes les 10s simulées (100 steps × 0.1s)
+        steps = 0
+        while not self._game_over:
+            self.update(dt)
+            steps += 1
+            if steps % dot_every == 0:
+                print(".", end="", flush=True)
+        pygame.quit()
 
     # ── Boucle principale ─────────────────────────────────────────────────
 

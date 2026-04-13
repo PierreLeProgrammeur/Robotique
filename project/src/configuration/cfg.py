@@ -20,7 +20,7 @@ class Config:
     # Virus
     VIRUS_SPEED: float = 55.0
     VIRUS_TURN_SPEED: float = 2.5
-    VIRUS_RANDOM_BIAS: float = 0.6      # utilisé dans virus.py
+    VIRUS_RANDOM_BIAS: float = 0.6
     VIRUS_SPAWN_INTERVAL: float = 1.8
     VIRUS_SPAWN_BATCH: int = 2
     VIRUS_MAX: int = 120
@@ -56,7 +56,7 @@ class Config:
 
     # ── Règles de fin ─────────────────────────────────────────────────────
     # Les virus gagnent s'ils atteignent ce % du sol. 0.0 = désactivé.
-    VIRUS_WIN_COVERAGE_PCT: float = 40.0
+    VIRUS_WIN_COVERAGE_PCT: float = 50.0
 
     # Les globules blancs gagnent si les virus n'ont pas gagné après ce délai
     # (en secondes). 0.0 = désactivé.
