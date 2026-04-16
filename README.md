@@ -60,8 +60,7 @@ Chaque agent dispose d'un **cône de vision** (rayon + demi-angle configurable).
 
 Le fichier `bench.py` permet de lancer un **sweep paramétrique** entièrement automatisé : pour chaque paramètre de `cfg.py`, une série de valeurs prédéfinies est testée `REPEATS` fois en mode *headless* (sans rendu graphique, sans limite de FPS), ce qui maximise la vitesse d'exécution.
 
-# Fonctionnement
-
+#### Fonctionnement
 Le sweep parcourt la liste `SWEEP`, qui définit pour chacun des paramètres les valeurs à tester (incluant la valeur par défaut). Chaque combinaison est jouée `REPEATS` fois pour lisser la variance due à l'aléatoire des spawns et des comportements. Chaque run produit une ligne dans `logs/runs.csv` via le `SimLogger` existant.
 La console affiche la progression et estime l'ETA en temps réel à partir de la durée moyenne des runs précédents.
 
