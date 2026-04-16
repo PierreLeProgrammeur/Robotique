@@ -52,8 +52,24 @@ Chaque agent dispose d'un **cône de vision** (rayon + demi-angle configurable).
 - Les virus gagnent s'ils atteignent un seuil de couverture du sol configurable (défaut : 50 %)
 - Les globules blancs gagnent s'ils tiennent pendant un temps configurable (défaut : 120 s)
 - Ces règles sont modifiables dans le fichier cfg.py
+  
 ### Logging
 À chaque fin de partie (victoire, défaite ou abandon), une ligne est ajoutée dans un fichier de log CSV contenant l'ensemble des paramètres de la simulation et les résultats. Ces données permettent d'étudier l'influence de chaque paramètre sur l'issue de la partie.
+
+### Tests automatisés & analyse paramétrique
+
+Le fichier `bench.py` permet de lancer un **sweep paramétrique** entièrement automatisé : pour chaque paramètre de `cfg.py`, une série de valeurs prédéfinies est testée `REPEATS` fois en mode *headless* (sans rendu graphique, sans limite de FPS), ce qui maximise la vitesse d'exécution.
+
+# Fonctionnement
+
+Le sweep parcourt la liste `SWEEP`, qui définit pour chacun des paramètres les valeurs à tester (incluant la valeur par défaut). Chaque combinaison est jouée `REPEATS` fois pour lisser la variance due à l'aléatoire des spawns et des comportements. Chaque run produit une ligne dans `logs/runs.csv` via le `SimLogger` existant.
+La console affiche la progression et estime l'ETA en temps réel à partir de la durée moyenne des runs précédents.
+
+Le sweep explore **22 paramètres** répartis en cinq groupes. Chaque paramètre est testé sur **5 valeurs**, les autres restant à leur valeur par défaut. 
+
+### Exploitation des résultats
+
+Les données collectées dans `runs.csv` permettent d'identifier quels paramètres influencent le plus l'issue de la simulation (victoire virus / globules blancs), et de calibrer les valeurs par défaut de `cfg.py` pour obtenir une partie équilibrée.
 
 ### Accélération
 La simulation peut être accélérée (×1 / ×1.5 / ×2) via les touches `↑` et `↓`, ce qui facilite les runs de collecte de données. <br> *Peut impacter la simulation et réduire les performances.*
