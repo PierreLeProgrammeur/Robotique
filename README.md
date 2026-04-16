@@ -49,7 +49,7 @@ Ces forces sont combinées avec une force de **chasse** (vers les virus ou le so
 Chaque agent dispose d'un **cône de vision** (rayon + demi-angle configurable). La détection du sol adverse utilise un algorithme de parcours de grille qui retourne la cellule adverse **la plus proche** dans le cône et non le centroïde moyen, ce qui garantit un comportement stable même en cas de contamination dense.
 
 ### Règles de fin
-- Les virus gagnent s'ils atteignent un seuil de couverture du sol configurable (défaut : 40 %)
+- Les virus gagnent s'ils atteignent un seuil de couverture du sol configurable (défaut : 50 %)
 - Les globules blancs gagnent s'ils tiennent pendant un temps configurable (défaut : 120 s)
 - Ces règles sont modifiables dans le fichier config.json
 ### Logging
