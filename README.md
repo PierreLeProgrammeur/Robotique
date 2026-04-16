@@ -16,7 +16,7 @@ La simulation ne script aucun comportement global. Chaque agent prend ses décis
 
 ## Démonstration
 
-![Aperçu de la simulation](docs/preview.gif)
+<img width="1092" height="615" alt="simulation_robotique" src="https://github.com/user-attachments/assets/9a39ac4e-1272-428b-b7a0-97a96b993b7a" />
 
 > Fond rouge = sol sain <br> Zones sombres = sol contaminé <br> Points noirs = virus <br> Points blancs = globules blancs
 
