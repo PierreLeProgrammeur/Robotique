@@ -51,7 +51,7 @@ Chaque agent dispose d'un **cône de vision** (rayon + demi-angle configurable).
 ### Règles de fin
 - Les virus gagnent s'ils atteignent un seuil de couverture du sol configurable (défaut : 50 %)
 - Les globules blancs gagnent s'ils tiennent pendant un temps configurable (défaut : 120 s)
-- Ces règles sont modifiables dans le fichier config.json
+- Ces règles sont modifiables dans le fichier cfg.py
 ### Logging
 À chaque fin de partie (victoire, défaite ou abandon), une ligne est ajoutée dans un fichier de log CSV contenant l'ensemble des paramètres de la simulation et les résultats. Ces données permettent d'étudier l'influence de chaque paramètre sur l'issue de la partie.
 
@@ -64,20 +64,27 @@ La simulation peut être accélérée (×1 / ×1.5 / ×2) via les touches `↑` 
 
 ```
 project/
-├── main.py                        
-├── config.py                      
+├── .gitignore
+├── README.md
+├── bench.py
 ├── logger.py
-├── utils.py                       
+├── main.py
+├── utils.py
 ├── logs/
-│   ├── runs.csv
-├── agents/
-│   ├── agent.py                   
-│   ├── virus.py                   
-│   └── globule_blanc.py           
-├── environment/
-│   └── environnement.py           
-└── core/
-    └── simulation.py              
+│   └── runs.csv
+├── src/
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── agent.py
+│   │   ├── globule_blanc.py
+│   │   └── virus.py
+│   ├── configuration/
+│   │   ├── __init__.py
+│   │   └── cfg.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   └── simulation.py
+│   └── environment/            
 ```
 
 ### Principes POO appliqués
@@ -85,7 +92,6 @@ project/
 - **Polymorphisme** : `decide()`, `paint_soil()` et `render()` sont abstraites et surchargées
 - **Encapsulation** : chaque agent gère son propre état interne, la simulation n'accède qu'à l'interface publique
 - **Séparation des responsabilités** : `Environnement` ne connaît pas les agents, `Agent` ne connaît pas `Simulation`
-- **Imports circulaires évités** : utilisation de `TYPE_CHECKING` pour les annotations
 
 ---
 
@@ -113,7 +119,7 @@ python project/main.py
 
 ## Paramètres configurables
 
-Tous les paramètres par défaut sont regroupés dans `config.py` et modifiables arbitrairement dans config.json :
+Tous les paramètres par défaut sont regroupés dans `cfg.py` et modifiables  :
 
 | Paramètre | Description | Défaut |
 |---|---|---|
@@ -126,7 +132,7 @@ Tous les paramètres par défaut sont regroupés dans `config.py` et modifiables
 | `BOID_W_SEPARATION` | Poids de la force de séparation | 1.8 |
 | `BOID_W_ALIGNMENT` | Poids de la force d'alignement | 0.9 |
 | `BOID_W_COHESION` | Poids de la force de cohésion | 0.7 |
-| `VIRUS_WIN_COVERAGE_PCT` | % sol pour victoire virus | 40 % |
+| `VIRUS_WIN_COVERAGE_PCT` | % sol pour victoire virus | 50 % |
 | `WBC_WIN_TIME` | Durée pour victoire globules | 120 s |
 
 ---
